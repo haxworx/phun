@@ -6,7 +6,6 @@ char *directories[DIRS_MAX];
 int _d_idx = 0;
 int _w_pos = 0;
 file_t *list_prev = NULL, *list_now = NULL;
-file_t *list_changes = NULL;
 bool _was_initialized = false;
 bool _is_recursive = true;
 
@@ -60,28 +59,6 @@ file_list_add(file_t *list, const char *path, struct stat *st)
 }
 
 file_t *
-file_list_add_changes(file_t *list, const char *path, struct stat *st, int changes)
-{
-	file_t *c = list;
-
-	while (c->next)
-		c = c->next;
-
-	if (! c->next) {
-		c->next = calloc(1, sizeof(file_t));
-
-		c = c->next;
-		c->next = NULL;
-	
-		c->stats = *st;	
-		c->path = strdup(path);
-		c->changed = changes;
-	}
-
-	return list;
-}
-
-file_t *
 file_exists(file_t *list, const char *filename)
 {
 	file_t *f = list->next;
@@ -105,7 +82,6 @@ _check_add_files(file_t *first, file_t *second)
 		file_t *exists = file_exists(first, f->path);
 		if (!exists) {
 			f->changed = MONITOR_ADD;
-			list_changes = file_list_add_changes(list_changes, f->path, &f->stats, MONITOR_ADD);
 			monitor_add_callback(f);
 #if defined(DEBUG)		
 			printf("add file : %s\n", f->path);
@@ -128,7 +104,6 @@ _check_del_files(file_t *first, file_t *second)
 		file_t *exists = file_exists(second, f->path);
 		if (!exists) {
 			f->changed = MONITOR_DEL;
-			list_changes = file_list_add_changes(list_changes, f->path, &f->stats, MONITOR_DEL);
 			monitor_del_callback(f);
 #if defined(DEBUG)
 			printf("del file : %s\n", f->path);
@@ -152,7 +127,6 @@ _check_mod_files(file_t *first, file_t *second)
 		if (exists) {
 			if (f->stats.st_mtime != exists->stats.st_mtime) {
 				f->changed = MONITOR_MOD;
-				list_changes = file_list_add_changes(list_changes, f->path, &f->stats, MONITOR_MOD);
 				monitor_mod_callback(f);
 #if defined(DEBUG)
 				printf("mod file : %s\n", f->path);
@@ -316,30 +290,7 @@ monitor_init(bool recursive)
 
 	list_prev = monitor_files_get(list_prev);	
 
-	list_changes = calloc(1, sizeof(file_t));
 	_was_initialized = true;
 }
 
-void
-monitor_process(void)
-{
-	file_t *cursor = list_changes->next;
-	if (!cursor) return;
- 
-	while (cursor) {
-		printf("cursor->path is: %s\n", cursor->path);
-		cursor = cursor->next;
-	}
-
-	cursor = list_changes->next;
-	
-	while (cursor) {
-		file_t *next = cursor->next;
-		free(cursor->path);
-		free(cursor);
-		cursor = next;
-	}	
-
-	list_changes->next = NULL;
-}
 

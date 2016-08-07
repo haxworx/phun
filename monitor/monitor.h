@@ -30,22 +30,20 @@ struct file_t {
 int monitor_watch(int poll_interval);
 void monitor_watch_add(const char *path);
 void monitor_init(bool);
-void monitor_process(void);
-
 
 typedef int (*callback)(void *data);
+
+void monitor_callback_set(int type, callback func);
 
 callback monitor_add_callback;
 callback monitor_del_callback;
 callback monitor_mod_callback;
 
-void monitor_callback_set(int type, callback func);
 
 /* Internal functions */
 	
 void file_list_free(file_t *list);
 file_t *file_list_add(file_t *list, const char *path, struct stat *st);
-file_t *file_list_add_changes(file_t *list, const char *path, struct stat *st, int changes);
 file_t *file_exists(file_t *list, const char *filename);
 int _check_add_files(file_t *first, file_t *second);
 int _check_del_files(file_t *first, file_t *second);
