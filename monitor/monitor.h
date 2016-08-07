@@ -24,7 +24,6 @@ struct file_t {
 	struct stat stats;
 	int changed;
 	file_t *next;
-
 };
 
 /* External functions */

@@ -197,20 +197,29 @@ void
 	while (c->next)
 		c = c->next;
 
-	c->next = two->next;
+	if (two->next)
+		c->next = two->next;
+	else
+		c->next = NULL;
 }
 
 file_t * 
 scan_recursive(const char *path)
 {
 	DIR *dir = opendir(path);
+	if (!dir) return NULL;
 	struct dirent *dh = NULL;
 	char *directories[8192] = { NULL };
-	int i = 0;
+	int i; 
 
 	file_t *list = calloc(1, sizeof(file_t));
 	list->next = NULL;
 
+	for (i = 0; i < sizeof(directories) / sizeof(char *); i++) {
+		directories[i] = NULL;
+	}
+
+	i = 0;
 
 	while ((dh = readdir(dir)) != NULL) {
 		if (dh->d_name[0] == '.') continue;
@@ -219,6 +228,9 @@ scan_recursive(const char *path)
 		snprintf(buf, sizeof(buf), "%s%c%s", path, SLASH, dh->d_name);
 		struct stat fstat;
 		if (stat(buf, &fstat) < 0) continue;
+
+		if (S_ISLNK(fstat.st_mode)) continue;
+
 		if (S_ISDIR(fstat.st_mode)) {
 			directories[i++] = strdup(buf);			
 			continue;
@@ -228,7 +240,6 @@ scan_recursive(const char *path)
 	}
 
 	closedir(dir);
-
 
 	i = 0;
 
