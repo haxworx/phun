@@ -1,5 +1,5 @@
 PROGRAM=monitor
-CFLAGS=-g -ggdb3 -Wall -pedantic
+CFLAGS=-g -ggdb3 -Wall -pedantic -std=c99
 FILES= main.c monitor.c
 
 default:
