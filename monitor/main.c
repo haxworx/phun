@@ -3,40 +3,40 @@
 int do_add(void *data)
 {
 	file_t *f = data;
-	printf("it is %s\n", f->path);
+	printf("ADD: %s\n", f->path);
+	return 1;
 }
 
 int do_del(void *data)
 {
 	file_t *f = data;
-	printf("it is %s\n", f->path);
+	printf("DEL: %s\n", f->path);
+
+	return 1;
 }
 
 int do_mod(void *data)
 {
 	file_t *f = data;
-	printf("it is %s\n", f->path);
-}
+	printf("MOD: %s\n", f->path);
 
-
-void setup_callbacks(void)
-{
-	monitor_add_callback = &do_add;
-	monitor_del_callback = &do_del;
-	monitor_mod_callback = &do_mod;
+	return 1;
 }
 
 int main(void)
 {
 	time_t interval = 3;
+	bool recursive = true;
 
-	monitor_add("/home/netstar");
+	monitor_watch_add("/home/netstar");
 
-	setup_callbacks();
+	monitor_callback_set(MONITOR_ADD, do_add);
+	monitor_callback_set(MONITOR_DEL, do_del);
+	monitor_callback_set(MONITOR_MOD, do_mod);
 
-	monitor_init();
+	monitor_init(recursive);
 
-	while (monitor(interval)) {
+	while (monitor_watch(interval)) {
 		// after a scan do ...
 		puts("done...");
 	}

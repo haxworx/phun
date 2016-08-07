@@ -1,2 +1,2 @@
 default:
-	gcc *.c -o monitor
+	gcc -Wall -pedantic  *.c -o monitor
