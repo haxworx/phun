@@ -8,8 +8,43 @@ int _w_pos = 0;
 file_t *list_prev = NULL, *list_now = NULL;
 bool _was_initialized = false;
 bool _is_recursive = true;
+bool quit = false;
 
-void monitor_callback_set(int type, callback func)
+int error(char *str)
+{
+	fprintf(stdout, "Error: %s\n", str);
+	exit(1 << 7);
+}
+
+monitor_t *monitor_new(void)
+{
+	monitor_t *m = calloc(1, sizeof(monitor_t));
+	m->error = &error;
+	m->callback_set = &monitor_callback_set;
+	m->watch_add = &monitor_watch_add;
+	m->init = &monitor_init;
+	m->watch = &monitor_watch;
+	m->mainloop = &monitor_mainloop;
+
+	return m;
+}
+
+int monitor_mainloop(int interval) 
+{
+	if (_d_idx == 0) exit(1 << 0);
+	if (! monitor_add_callback || ! monitor_del_callback
+		|| !monitor_mod_callback)
+	error("callbacks not initialised!");
+
+	list_prev = monitor_files_get(list_prev);	
+
+        while (monitor_watch(interval) && !quit);
+
+	return 1;
+}                
+
+
+int monitor_callback_set(int type, callback func)
 {
         switch (type) {
         case MONITOR_ADD:
@@ -21,6 +56,8 @@ void monitor_callback_set(int type, callback func)
         case MONITOR_MOD:
                 monitor_mod_callback = func;
         };
+
+	return 1;
 }
 
 void 
@@ -269,28 +306,46 @@ monitor_watch(int poll)
 	return 1;
 }
 	
-void
+int
 monitor_watch_add(const char *path)
 {
 	if (_d_idx >= DIRS_MAX) 
-		exit(1 << 1);
+		error("watch_add(): dirs limit reached!");	
 
+	struct stat dstat;
+
+	if (stat(path, &dstat) < 0)
+		error("watch_add(): directory exists? check permissions.");
+	
+	if (!S_ISDIR(dstat.st_mode))
+		error("watch_add(): not a directory.");
+	
 	directories[_d_idx++] = strdup(path);
+
+	return 1;
 }
 
-void
+void exit_safe(int sig)
+{
+        if (sig != SIGINT && sig != SIGTERM) return;
+        quit = true;
+}
+
+int
 monitor_init(bool recursive)
 {
-	if (_d_idx == 0) exit(1 << 0);
 	if (!recursive) 
 		_is_recursive = false;
 
 	directories[_d_idx] = NULL;
 	directories[DIRS_MAX - 1] = NULL;
 
-	list_prev = monitor_files_get(list_prev);	
 
+        signal(SIGINT, exit_safe);
+        signal(SIGTERM, exit_safe);
+	
 	_was_initialized = true;
-}
 
+	return 1;
+}
 

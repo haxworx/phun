@@ -10,6 +10,7 @@
 #include <limits.h>
 #include <time.h>
 #include <sys/stat.h>
+#include <signal.h>
 
 #define SLASH '/'
 
@@ -26,19 +27,40 @@ struct file_t {
 	file_t *next;
 };
 
-/* External functions */
-int monitor_watch(int poll_interval);
-void monitor_watch_add(const char *path);
-void monitor_init(bool);
-
 typedef int (*callback)(void *data);
-
-void monitor_callback_set(int type, callback func);
 
 callback monitor_add_callback;
 callback monitor_del_callback;
 callback monitor_mod_callback;
 
+typedef int (*fn_callback_set)(int type, callback);
+typedef int (*fn_watch_add)(const char * path);
+typedef int (*fn_init)(bool recursive);
+typedef int (*fn_watch)(int poll_interval);
+typedef int (*fn_error)(char *string);
+
+/* External functions */
+int monitor_watch(int poll_interval);
+int monitor_mainloop(int poll_interval);
+int monitor_watch_add(const char *path);
+int monitor_callback_set(int type, callback);
+int monitor_init(bool);
+int error(char *);
+
+typedef struct monitor_t monitor_t;
+struct monitor_t {
+	fn_init init;
+	fn_watch_add watch_add;	
+	fn_watch watch;
+	fn_watch mainloop;
+	fn_callback_set callback_set;
+	fn_error error;
+	callback add_callback;
+	callback del_callback;
+	callback mod_callback;	
+};
+
+monitor_t *monitor_new(void);
 
 /* Internal functions */
 	
